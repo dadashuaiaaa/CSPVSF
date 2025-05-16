@@ -1,4 +1,4 @@
-from net.CIDNet import CIDNet
+from net.DFENet import DFENet
 import os
 import json
 import safetensors.torch as sf
@@ -11,7 +11,7 @@ import platform
 from PIL import Image
 
 eval_parser = argparse.ArgumentParser(description='EvalHF')
-eval_parser.add_argument('--path', type=str, default="Fediory/HVI-CIDNet-LOLv1-wperc", help='You can change this path to our method weights mentioned here: https://huggingface.co/papers/2502.20272.')
+eval_parser.add_argument('--path', type=str, default="Fediory/HVI-DFENet-LOLv1-wperc", help='You can change this path to our method weights mentioned here: https://huggingface.co/papers/2502.20272.')
 eval_parser.add_argument('--input_img', type=str, default="../datasets/DICM/01.jpg", help='The path of your image.')
 eval_parser.add_argument('--alpha_s', type=float, default=1.0)
 eval_parser.add_argument('--alpha_i', type=float, default=1.0)
@@ -36,7 +36,7 @@ def from_pretrained(cls, pretrained_model_name_or_path: str):
 
 
 
-model = CIDNet().cuda()
+model = DFENet().cuda()
 model = from_pretrained(cls=model,pretrained_model_name_or_path=el.path)
 model.eval()
 
