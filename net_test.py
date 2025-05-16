@@ -1,10 +1,10 @@
 from thop import profile
 import torch
 import time
-from net.CIDNet import CIDNet
+from net.DFENet import DFENet
 
 # 初始化模型与输入
-model = CIDNet().to('cuda')
+model = DFENet().to('cuda')
 input = torch.rand(1, 3, 256, 256).to('cuda')
 
 # 模型评估模式 & 同步 CUDA 时间
