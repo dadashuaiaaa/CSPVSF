@@ -143,13 +143,13 @@ class DINOCrossAttention(nn.Module):
         return out
 
 
-class CIDNet(nn.Module, PyTorchModelHubMixin):
+class DFENet(nn.Module, PyTorchModelHubMixin):
     def __init__(self, 
                  channels=[36, 36, 72, 144],
                  heads=[1, 2, 4, 8],
                  norm=False,
                  vit_pretrain_path="pretrain/dinov2_vitb14_reg4_pretrain.pth"):
-        super(CIDNet, self).__init__()
+        super(DFENet, self).__init__()
 
         self.dinov2 = vit_base(
             patch_size=14,
@@ -165,7 +165,7 @@ class CIDNet(nn.Module, PyTorchModelHubMixin):
             output_dinov2=[4, 8]
         )
 
-        # 添加 DINO 特征通道调整模块
+
         self.vit_proj = nn.Conv2d(768, channels[-1], kernel_size=1)
         self.neck = Neck()
         self.neck2 = Neckj()
@@ -268,45 +268,16 @@ class CIDNet(nn.Module, PyTorchModelHubMixin):
         #print(f"Data type of i_enc4: {type(i_enc4)}")
         
 
-
-        # === DINO 特征融合 ===
-        # 打印 i_enc4 的前五个元素
-        #print(f"i_enc4 before fusion (first 5 elements): {i_enc4[:5]}")
-        #print(f"Before fusion: i_enc4 - max: {i_enc4.max()}, min: {i_enc4.min()}, mean: {i_enc4.mean()}, std: {i_enc4.std()}")
-
         x_resized = F.interpolate(x, size=(252, 252), mode='bilinear', align_corners=False)
         vis_I = self.fusion(x_resized, i_enc4, hv_4, self.dinov2)
-        #print(f"After fusion: i_enc4 - max: {i_enc4.max()}, min: {i_enc4.min()}, mean: {i_enc4.mean()}, std: {i_enc4.std()}")
-
-       
 
         
-        fused_feats = self.neck(vis_I)  #8*144*35*35
-        #print(fused_feats.shape)
-
+        fused_feats = self.neck(vis_I) 
         
         
         kv_feats = torch.cat([i_enc4, hv_4], dim=1)  # B, C1+C2, H, W
         kv_feats = self.hviconv_layer(kv_feats) 
-        #fused_feats2 = F.interpolate(fused_feats, size=(35, 35), mode='bilinear', align_corners=False)
-        
-        #print(fused_feats.shape)
-        
-        
-        #fused_feats2 = self.cross_attention_I(fused_feats, kv_feats, kv_feats) 
-        #print(fused_feats2.shape)
-        
-        
-        #vit_features_I = vis_I [-1] if isinstance(vis_I , list) else vis_I 
 
-        #vit_features_I = F.interpolate(fused_feats, size=(35, 35), mode='bilinear', align_corners=False)
-        #vit_features_I = self.vit_proj(vit_features_I)
-        #print(vit_features_I.shape)
-        #i_enc41 = self.cross_attention_I(i_enc4, i_enc4, fused_feats)
-        #hv_41 = self.cross_attention_HV(hv_4, hv_4, fused_feats)
-       # i_enc4 = F.interpolate(i_enc41, size=i_enc4.shape[2:], mode='bilinear', align_corners=False)
-        #hv_4 = F.interpolate(hv_41, size=i_enc4.shape[2:], mode='bilinear', align_corners=False)
-        
 
         fused_feats = F.interpolate(fused_feats, size=i_enc4.shape[2:], mode='bilinear', align_corners=False)
 
@@ -328,19 +299,9 @@ class CIDNet(nn.Module, PyTorchModelHubMixin):
         i_dec0 = self.ID_block0(i_dec1)
         hv_1 = self.HVD_block1(hv_1, hv_jump0)
         hv_0 = self.HVD_block0(hv_1)
- 
-        
-        #fused_feats2 = F.interpolate(fused_feats2, size=hv_0.shape[2:], mode='bilinear', align_corners=False)
-        #kv_feats2 = self.hviconv_layer2(fused_feats2) 
-        
-        
-        output_hvi = i_dec0 + hv_0 + hvi
-        #output_hvi = hvi
-       # output_hvidino = output_hvi + kv_feats2
-       # output_hvidino =  kv_feats2
-        
+
+        output_hvi = i_dec0 + hv_0 
         output_rgb = self.trans.PHVIT(output_hvi)
-        #print(output_rgb.shape)
 
         return output_rgb, output_hvi
 
